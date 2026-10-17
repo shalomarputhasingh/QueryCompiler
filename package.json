@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "db:seed": "tsx scripts/seed.ts",
     "db:reset": "tsx scripts/seed.ts --reset",
+    "demo": "node scripts/record-demo.mjs",
     "check": "tsc --noEmit && vitest run"
   },
   "dependencies": {
