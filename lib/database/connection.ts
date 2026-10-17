@@ -16,7 +16,7 @@ export interface DatabaseHandle {
 const globalForDb = globalThis as unknown as { __queryCompilerDb?: DatabaseHandle };
 
 export function databasePath(): string {
-  return path.resolve(process.env.SQLITE_PATH ?? path.join(process.cwd(), "data", "querycompiler.db"));
+  return path.resolve(/*turbopackIgnore: true*/ process.env.SQLITE_PATH ?? path.join(/*turbopackIgnore: true*/ process.cwd(), "data", "querycompiler.db"));
 }
 
 function createSeededFile(file: string): void {
