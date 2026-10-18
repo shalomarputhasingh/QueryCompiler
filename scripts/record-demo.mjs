@@ -3,6 +3,11 @@
  *   1. npm run build && SQLITE_PATH=./data/demo.db npx next start -p 3100
  *   2. npm run demo            (optionally CHROMIUM_PATH=/path/to/chrome)
  * Output: docs/demo/querycompiler-demo.mp4 (needs ffmpeg on PATH)
+ *
+ * Quera needs a Groq answer to show. With a real GROQ_API_KEY in the app's environment the video shows
+ * real answers; otherwise run the local stand-in first (it writes grounded explanations, it is not a model):
+ *   MOCK_GROQ_STYLE=explain node e2e/mock-groq.mjs
+ *   GROQ_API_KEY=demo GROQ_BASE_URL=http://127.0.0.1:4010/openai/v1 SQLITE_PATH=./data/demo.db npx next start -p 3100
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
@@ -178,6 +183,31 @@ await sleep(1800);
 await pickSample("ambiguous-column");
 await sleep(1500);
 await click(page.getByTestId("execute"), { after: 1800 });
+
+// 8b. Quera, the AI tutor ---------------------------------------------------
+await pickSample("bad-column");
+await sleep(1000);
+await click(page.getByTestId("quera-launcher"), { after: 1800 });      // welcome screen + suggestions
+await click(page.getByRole("button", { name: "Why did my query fail?" }), { after: 500 });
+await sleep(3200);                                                      // the animated "thinking" state
+await page.getByRole("button", { name: "Copy answer" }).first().waitFor({ state: "attached", timeout: 60000 });
+await sleep(2600);
+await click(page.getByRole("button", { name: /Use in editor/ }), { after: 1500 });
+await click(page.getByTestId("analyze"), { after: 2200 });              // the fixed query now compiles
+await pickSample("three-way-join");
+await sleep(800);
+await click(page.getByTestId("quera-input"), { after: 300 });
+await page.keyboard.type("Which optimizations applied, and why?", { delay: 50 });
+await sleep(500);
+await page.keyboard.press("Enter");
+await sleep(3200);
+await page.getByRole("button", { name: "Copy answer" }).nth(1).waitFor({ state: "attached", timeout: 60000 });
+await sleep(1500);
+await scroll(450, 6);
+await sleep(2000);
+await click(page.getByRole("button", { name: "Make panel wider" }), { after: 1800 });
+await click(page.getByRole("button", { name: "Make panel narrower" }), { after: 1000 });
+await click(page.getByTestId("quera-close"), { after: 1500 });
 
 // 9. Examples
 await click(nav("Example Queries"), { after: 1200 });
