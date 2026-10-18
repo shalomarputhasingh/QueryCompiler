@@ -3,6 +3,9 @@
 import { AlertCircle, CheckCircle2, CircleDashed } from "lucide-react";
 import { useWorkspace } from "@/components/layout/workspace-provider";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { QueraAvatar } from "@/components/quera/quera-avatar";
+import { useQuera } from "@/components/quera/quera-provider";
 import { Spinner } from "@/components/ui/spinner";
 import { Metric } from "./shared";
 
@@ -17,6 +20,7 @@ const PHASE_TEXT: Record<string, string> = {
 
 export function SummaryCard() {
   const { analysis, analysisStatus, analysisError, stale, execution } = useWorkspace();
+  const { ask } = useQuera();
 
   let head: React.ReactNode;
   if (analysisStatus === "loading") {
@@ -87,6 +91,11 @@ export function SummaryCard() {
         <Metric label="Diagnostics" value={s ? s.diagnosticCount : "–"} tone={s && s.errorCount > 0 ? "bad" : undefined} />
         <Metric label="Optimization rules" value={s ? s.rulesApplied : "–"} />
       </div>
+      {analysis && !stale ? (
+        <Button variant="outline" size="sm" className="justify-start" onClick={() => ask(analysis.success ? "Explain this query step by step." : "Why did my query fail, and how do I fix it?")} data-testid="ask-quera-summary">
+          <QueraAvatar size={18} /> {analysis.success ? "Ask Quera to explain this query" : "Ask Quera what went wrong"}
+        </Button>
+      ) : null}
       <div className="grid grid-cols-2 gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
         <p>
           Semantic validation:{" "}

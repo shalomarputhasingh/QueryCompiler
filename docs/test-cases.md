@@ -1,6 +1,6 @@
 # Test cases
 
-Run: `npm test` (228 tests, Vitest) and `npm run test:e2e` (7 scenarios, Playwright).
+Run: `npm test` (255 tests, Vitest) and `npm run test:e2e` (13 scenarios, Playwright).
 
 | Suite | File | What it proves |
 |---|---|---|
@@ -11,6 +11,9 @@ Run: `npm test` (228 tests, Vitest) and `npm run test:e2e` (7 scenarios, Playwri
 | Pipeline | `tests/pipeline.test.ts` | phase statuses, stopping at lexical/syntax/semantic phase while keeping earlier results, empty/oversized/hostile input, JSON-serialisable, deterministic, locations |
 | API & DB | `tests/api.test.ts` | file DB created/seeded/reused, FK integrity, read-only connection, analyze/execute/schema contracts, request validation (400/413/415), unknown fields rejected, blocked statements (INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, ATTACH, PRAGMA, VACUUM, REPLACE, WITH, multi-statement, sqlite_master, subquery) → 422, quote-injection handled as data, integer-semantics of bound literals, sanitised errors, row cap |
 | Examples & Learning Mode | `tests/examples.test.ts` | every documented example behaves as documented (compiles / stops at the stated phase) and returns the same rows as SQLite; Learning Mode text is produced from real output |
+| Quera backend | `tests/quera-groq.test.ts`, `tests/quera-api.test.ts` | retry-hint parsing (`7.6s`, `1m3.2s`, `850ms`, `Retry-After`); a 429 is silently waited out with keep-alive pings (no error event) incl. a 60 s wait; 5xx / network retries; switch to the fallback model when waiting is impossible; generic failure only when nothing recovers; missing/rejected key; abort; `/api/chat` grounds the prompt in the real compiler output (diagnostics with line/column, algebra, optimizer steps, execution rows), serialises concurrent requests, validates input (400/413/415), never exposes the key |
+| Quera UI helpers | `tests/markdown.test.ts`, `tests/highlight.test.ts` | safe Markdown subset (no HTML / `javascript:` links, snake_case preserved, unclosed streaming code fences), lexer-based SQL highlighting loses no characters even on broken SQL |
+| End-to-end (Quera) | `e2e/quera.spec.ts` | launcher + contextual suggestions, streamed Markdown answer grounded in compiler output, "Use in editor", throttled provider shows only the thinking animation (and really waits) with no limit wording anywhere, Ask Quera buttons, history persistence / new chat / Esc, phone layout. Runs against `e2e/mock-groq.mjs`, a local fake Groq server — no real key or network needed |
 | End-to-end | `e2e/workbench.spec.ts` | open app → load sample → analyze → filter tokens → inspect AST (graph + text) → symbol search → algebra → optimization steps → execute → rows shown; syntax error shows message, location and editor marker, execution refused; invalid samples; keyboard shortcut and stale-edit indicator; navigation, examples, history restore/clear, schema, documentation, Learning Mode; theme toggle + Run All; phone viewport without horizontal overflow |
 
 ## Manual checklist

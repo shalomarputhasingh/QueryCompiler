@@ -36,7 +36,7 @@ function StatusChip() {
   }
 
   return (
-    <span role="status" aria-live="polite" data-testid="compiler-status" className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium", tone)}>
+    <span role="status" aria-live="polite" data-testid="compiler-status" className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium", tone)}>
       {icon}
       {text}
     </span>
@@ -62,7 +62,7 @@ export function Header({ onMenu }: { onMenu: () => void }) {
       <div className="ml-auto flex items-center gap-2">
         <span className="hidden md:inline-flex"><StatusChip /></span>
         <span
-          className="hidden items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground lg:inline-flex"
+          className="hidden items-center gap-1.5 whitespace-nowrap rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground 2xl:inline-flex"
           title={storage === "memory" ? "Seeded in-memory SQLite (file system not writable)" : "SQLite file database"}
         >
           <Database className="size-3.5" aria-hidden />

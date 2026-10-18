@@ -115,3 +115,59 @@
   scrollbar-width: thin;
   scrollbar-color: var(--input) transparent;
 }
+
+/* ---- Quera (AI tutor) ------------------------------------------------------ */
+@keyframes quera-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes quera-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes quera-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.55; }
+  50% { transform: scale(1.35); opacity: 0.15; }
+}
+@keyframes quera-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@keyframes quera-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes quera-word {
+  from { opacity: 0; transform: translateY(5px); filter: blur(2px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes quera-blink {
+  50% { opacity: 0; }
+}
+.quera-shimmer {
+  background: linear-gradient(90deg, var(--muted-foreground) 30%, var(--foreground) 50%, var(--muted-foreground) 70%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: quera-shimmer 2.4s linear infinite;
+}
+.quera-rise { animation: quera-rise 0.28s ease-out both; }
+.quera-word { animation: quera-word 0.4s ease-out both; }
+.quera-streaming > :is(p, h4, blockquote):last-child::after,
+.quera-streaming > :is(ul, ol):last-child > li:last-child::after {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  border-radius: 2px;
+  background: var(--primary);
+  animation: quera-blink 1s steps(2, start) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .quera-shimmer, .quera-rise, .quera-word, .quera-streaming > :is(p, h4, blockquote):last-child::after,
+.quera-streaming > :is(ul, ol):last-child > li:last-child::after { animation: none; }
+  .quera-shimmer { color: var(--muted-foreground); background: none; }
+  [data-quera-motion] { animation: none !important; }
+}

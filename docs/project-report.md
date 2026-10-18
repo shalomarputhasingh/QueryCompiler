@@ -115,7 +115,7 @@ SQL text ─▶ Lexer ──error──▶ report + stop
 Full list: [test-cases.md](test-cases.md).
 
 ## 10. Results and screenshots checklist
-Results actually obtained in development: `npm run typecheck` clean; `npm test` — 228 tests passing; `npm run test:e2e` — 7 scenarios passing; `npm run build` succeeds. No performance experiments were run, so no speed-up figures are claimed.
+Results actually obtained in development: `npm run typecheck` clean; `npm test` — 255 tests passing; `npm run test:e2e` — 13 scenarios passing; `npm run build` succeeds. No performance experiments were run, so no speed-up figures are claimed.
 
 Screenshots to capture for the report (not included in the repository):
 - [ ] Playground with the default query, Overview tab (all six phase panels)

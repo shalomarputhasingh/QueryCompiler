@@ -4,6 +4,8 @@ import { AlertCircle, AlertTriangle, Check, Copy, Info, Sparkles } from "lucide-
 import { useState } from "react";
 import { useWorkspace } from "@/components/layout/workspace-provider";
 import { Badge } from "@/components/ui/badge";
+import { useQuera } from "@/components/quera/quera-provider";
+import { QueraAvatar } from "@/components/quera/quera-avatar";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { Diagnostic } from "@/lib/compiler/diagnostics";
@@ -92,6 +94,7 @@ export function SectionTitle({ children, right }: { children: React.ReactNode; r
 
 export function DiagnosticList({ diagnostics }: { diagnostics: Diagnostic[] }) {
   const { reveal, stale } = useWorkspace();
+  const { ask } = useQuera();
   if (diagnostics.length === 0) return null;
   return (
     <ul className="space-y-1.5" aria-label="Diagnostics">
@@ -122,6 +125,14 @@ export function DiagnosticList({ diagnostics }: { diagnostics: Diagnostic[] }) {
                   onClick={() => reveal(d.range)}
                 >
                   line {d.range.start.line}, column {d.range.start.column}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => ask(`Explain this ${d.severity} and how to fix it: ${d.code} at line ${d.range.start.line}, column ${d.range.start.column} — "${d.message}"`)}
+                  className="ml-auto inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-[11px] font-medium text-foreground hover:border-primary/60 hover:bg-accent/50"
+                  data-testid="ask-quera-diagnostic"
+                >
+                  <QueraAvatar size={14} /> Ask Quera
                 </button>
               </p>
             </div>

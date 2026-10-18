@@ -26,6 +26,7 @@ Compiler phases are abstract. Students read about lexers, parsers and optimizers
 | Graphs | React Flow (`@xyflow/react`) with a custom tidy-tree layout |
 | Compiler | Custom lexer, recursive-descent + Pratt parser, typed AST, semantic analyzer, relational-algebra IR, rule-based optimizer (all in `lib/compiler`) |
 | Database | SQLite via `better-sqlite3` |
+| AI tutor | Groq API (OpenAI-compatible, streamed), `llama-3.3-70b-versatile` by default |
 | Validation | Zod |
 | Tests | Vitest (unit/integration), Playwright (end-to-end) |
 
@@ -93,14 +94,14 @@ npm start                # http://localhost:3000
 ### 6. Verify the installation
 ```bash
 npm run typecheck        # strict TypeScript
-npm test                 # 228 unit + integration tests (about 1 s)
+npm test                 # 255 unit + integration tests (a few seconds)
 ```
 Then open the playground, choose **Sample query… → Three-table join**, press **Analyze** and then **Execute**; you should see "Analysis Successful" and a table of rows.
 
 ### 7. End-to-end tests (optional)
 ```bash
 npx playwright install chromium     # one-time browser download
-npm run test:e2e                    # builds, starts the app on port 3100, runs 7 browser scenarios
+npm run test:e2e                    # builds, starts the app on port 3100, runs 13 browser scenarios
 ```
 If you already have a Chromium/Chrome and do not want Playwright's download: `CHROMIUM_PATH=/path/to/chrome npm run test:e2e`.
 
@@ -132,6 +133,28 @@ Requirements: `ffmpeg` on your PATH (or `FFMPEG_PATH=/path/to/ffmpeg`) and Chrom
 | `npm run check` | typecheck + unit tests |
 | `npm run db:seed` / `db:reset` | create / rebuild the sample database (idempotent) |
 | `npm run demo` | re-record the demo video |
+
+## Quera — the AI tutor
+Quera is a chat assistant built into the app (open it with the floating **Ask Quera** button, **Ctrl/⌘ + /**, or the **Ask Quera** buttons next to every diagnostic and on the analysis summary card). She is powered by the [Groq API](https://console.groq.com) and **sees your current query plus everything the compiler produced for it**: diagnostics with line/column, tokens, syntax tree, semantic results, relational algebra, optimizer steps (and the rules that were skipped), generated SQL and a sample of the execution result. She uses that to explain what the query does, why it failed, how to fix it, and why each optimization is safe. Code blocks in her answers are syntax-highlighted and can be sent straight to the editor.
+
+### Enable Quera (free)
+1. Create a free key at <https://console.groq.com/keys>.
+2. Put it in `.env.local` in the project root (never commit it, and never prefix it with `NEXT_PUBLIC_`):
+   ```bash
+   GROQ_API_KEY=gsk_your_key_here
+   ```
+3. Restart `npm run dev`. Until a key is set, Quera politely shows a setup card instead of an answer.
+
+Optional settings (see `.env.example`): `GROQ_MODEL` (default `llama-3.3-70b-versatile`), `GROQ_FALLBACK_MODEL` (default `llama-3.1-8b-instant`), `QUERA_MAX_WAIT_MS` (default 240000).
+
+### How the free-tier limits are handled
+The key stays on the server (`/api/chat`); the browser never sees it. Free Groq keys have per-minute and per-day limits, so the server absorbs them instead of showing an error:
+- A `429`/`5xx` answer is retried after the time Groq asks for (`Retry-After` header or "try again in 7.6s" hint), for up to 4 minutes per answer.
+- Requests are queued so only one call is in flight at a time.
+- If waiting is no longer possible (e.g. a daily quota), the lighter fallback model, which has its own quota, is tried.
+- While waiting, the user only sees Quera's animated "thinking" status (*Quera-ing…, Walking the syntax tree…, Folding constants…*), never a rate-limit message. Only if nothing recovers does she say she tripped over the question and offer **Retry**.
+
+Privacy: the SQL you type, the compiler output and up to 8 result rows are sent to Groq to produce an answer. Chat history is kept only in your browser (`localStorage`, last 40 messages; "New chat" clears it).
 
 ## Supported SQL grammar
 Keywords and identifiers are case-insensitive. Comments `-- …` and `/* … */` are allowed. One statement per request.
@@ -236,14 +259,16 @@ All endpoints run on the Node.js runtime, validate input with Zod (unknown field
 |---|---|---|
 | `POST /api/analyze` | `{ "sql": string }` | Full compile result: `tokens`, `ast`, `astText`, `diagnostics`, `semantic`, `symbolTable`, `algebra`, `optimization` (`steps`, `skipped`, `rules`), `codegen`, `phases`, `stats`, `database`. Invalid SQL is a **200** with `success: false` and diagnostics |
 | `POST /api/execute` | `{ "sql": string, "plan"?: "optimized" \| "original" }` | `200 {status, plan, columns, rows, rowCount, truncated, durationMs, sql, parameterizedSql, paramCount}`; `422` with `diagnostics` if the query fails compilation or is a blocked statement; `400/413/415` for bad requests |
+| `POST /api/chat` | `{ "sql": string, "messages": [{ "role": "user"\|"assistant", "content": string }] }` | Streamed NDJSON events: `delta` (text), `ping` (keep-alive while waiting), `done`, `error` (`not_configured`, `unauthorized`, `unavailable`, `bad_request`). The server recompiles `sql` itself to build Quera's context |
+| `GET /api/chat` | – | `{ assistant, configured, model }` (never the key) |
 | `GET /api/schema` | – | `{ database, tables: [{ name, rowCount, primaryKey, columns, foreignKeys }] }` |
 
 **Execution safety.** The server recompiles every query (client flags are ignored); only a single SELECT that passed all phases runs; literals are bound as parameters (integers as BigInt to keep SQLite integer semantics); the connection is opened read-only with `query_only`; results are capped at 500 rows; errors are sanitised; there is no `eval`, raw connection or file access.
 
 ## Testing
 ```bash
-npm test            # 228 unit/integration tests
-npm run test:e2e    # 7 Playwright scenarios
+npm test            # unit/integration tests (incl. Quera's Groq client, wait logic and /api/chat)
+npm run test:e2e    # Playwright scenarios (Quera runs against a local mock Groq server — no key needed)
 ```
 Coverage: lexer (tokens, positions, errors), parser (grammar, precedence, error recovery, unsupported constructs), semantic analysis (tables, columns, aliases, ambiguity, types, aggregates, symbol table), every optimizer rule with positive and negative cases, **equivalence of original, translated and optimized plans against SQLite on 42 queries (including NULL edge cases)**, pipeline phase stopping, API validation, read-only enforcement and blocked statements, all example queries, and the browser flow (load sample → analyze → tokens/AST → algebra/optimization → execute → invalid SQL diagnostics). Test list: [docs/test-cases.md](docs/test-cases.md).
 
