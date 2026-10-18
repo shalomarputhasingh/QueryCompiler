@@ -14,8 +14,8 @@ export function readQueraConfig(env: Record<string, string | undefined> = proces
   return {
     apiKey: key ? key : null,
     baseUrl: (env.GROQ_BASE_URL?.trim() || "https://api.groq.com/openai/v1").replace(/\/+$/, ""),
-    model: env.GROQ_MODEL?.trim() || "llama-3.3-70b-versatile",
-    fallbackModel: env.GROQ_FALLBACK_MODEL?.trim() || "llama-3.1-8b-instant",
+    model: env.GROQ_MODEL?.trim() || "openai/gpt-oss-120b",
+    fallbackModel: env.GROQ_FALLBACK_MODEL?.trim() || "openai/gpt-oss-20b",
     maxWaitMs: Number.isFinite(wait) && wait > 0 ? wait : 4 * 60_000,
   };
 }

@@ -26,7 +26,7 @@ Compiler phases are abstract. Students read about lexers, parsers and optimizers
 | Graphs | React Flow (`@xyflow/react`) with a custom tidy-tree layout |
 | Compiler | Custom lexer, recursive-descent + Pratt parser, typed AST, semantic analyzer, relational-algebra IR, rule-based optimizer (all in `lib/compiler`) |
 | Database | SQLite via `better-sqlite3` |
-| AI tutor | Groq API (OpenAI-compatible, streamed), `llama-3.3-70b-versatile` by default |
+| AI tutor | Groq API (OpenAI-compatible, streamed), `openai/gpt-oss-120b` by default |
 | Validation | Zod |
 | Tests | Vitest (unit/integration), Playwright (end-to-end) |
 
@@ -150,7 +150,9 @@ Quera is a chat assistant built into the app (open it with the floating **Ask Qu
    ```
 3. Restart `npm run dev`. Until a key is set, Quera politely shows a setup card instead of an answer.
 
-Optional settings (see `.env.example`): `GROQ_MODEL` (default `llama-3.3-70b-versatile`), `GROQ_FALLBACK_MODEL` (default `llama-3.1-8b-instant`), `QUERA_MAX_WAIT_MS` (default 240000).
+Quera uses **`openai/gpt-oss-120b`** on Groq (falling back to `openai/gpt-oss-20b`). It is a reasoning model, so requests ask for low reasoning effort, hide the reasoning text and allow 2048 completion tokens; other models (via `GROQ_MODEL`) get plain `max_tokens` instead.
+
+Optional settings (see `.env.example`): `GROQ_MODEL` (default `openai/gpt-oss-120b`), `GROQ_FALLBACK_MODEL` (default `openai/gpt-oss-20b`), `QUERA_MAX_WAIT_MS` (default 240000).
 
 ### How the free-tier limits are handled
 The key stays on the server (`/api/chat`); the browser never sees it. Free Groq keys have per-minute and per-day limits, so the server absorbs them instead of showing an error:

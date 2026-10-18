@@ -67,7 +67,7 @@ const ask = (sql: string, q = "Explain this") => post({ sql, messages: [{ role: 
 describe("POST /api/chat", () => {
   it("reports configuration status without exposing the key", async () => {
     const body = await handlers.handleChatStatus().json();
-    expect(body).toEqual({ assistant: "Quera", configured: true, model: "llama-3.3-70b-versatile" });
+    expect(body).toEqual({ assistant: "Quera", configured: true, model: "openai/gpt-oss-120b" });
     expect(JSON.stringify(body)).not.toContain("test-key");
   });
 

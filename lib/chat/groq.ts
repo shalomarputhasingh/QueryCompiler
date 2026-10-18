@@ -48,6 +48,17 @@ export function computeWaitMs(headers: Headers, bodyText: string, attempt: numbe
   return Math.min(MAX_SINGLE_WAIT_MS, Math.max(MIN_WAIT_MS, ms + 400)); // small pad so the window has really reset
 }
 
+/**
+ * Request parameters that depend on the model. gpt-oss models are reasoning models: they spend part of
+ * the completion budget on hidden reasoning, so they get a roomier token limit, a low reasoning effort
+ * (fast, and kind to free-tier quotas) and the reasoning text is not returned. Other models reject
+ * those parameters, so they are only sent to gpt-oss.
+ */
+export function modelParams(model: string): Record<string, unknown> {
+  if (/gpt-oss/i.test(model)) return { reasoning_effort: "low", include_reasoning: false, max_completion_tokens: 2048 };
+  return { max_tokens: 900 };
+}
+
 const defaultSleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 /**
@@ -101,7 +112,7 @@ export async function* streamChat(messages: ChatMessage[], opts: StreamOptions):
       res = await doFetch(`${config.baseUrl}/chat/completions`, {
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${config.apiKey}` },
-        body: JSON.stringify({ model, messages, stream: true, temperature: 0.3, max_tokens: 900 }),
+        body: JSON.stringify({ model, messages, stream: true, temperature: 0.3, ...modelParams(model) }),
         signal: opts.signal,
       });
     } catch {

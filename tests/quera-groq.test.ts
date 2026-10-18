@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readQueraConfig } from "@/lib/chat/config";
-import { type ChatEvent, computeWaitMs, parseRetryHint, streamChat } from "@/lib/chat/groq";
+import { type ChatEvent, computeWaitMs, modelParams, parseRetryHint, streamChat } from "@/lib/chat/groq";
 
 const cfg = (over: Partial<ReturnType<typeof readQueraConfig>> = {}) => ({ ...readQueraConfig({ GROQ_API_KEY: "k" }), ...over });
 
@@ -21,9 +21,10 @@ const text = (events: ChatEvent[]) => events.flatMap((e) => (e.type === "delta" 
 function harness(responses: (Response | Error)[]) {
   let clock = 0;
   const sleeps: number[] = [];
-  const calls: { model: string }[] = [];
+  const calls: { model: string; body: Record<string, unknown> }[] = [];
   const fetchImpl = (async (_url: string, init: RequestInit) => {
-    calls.push({ model: JSON.parse(String(init.body)).model });
+    const body = JSON.parse(String(init.body));
+    calls.push({ model: body.model, body });
     const next = responses.shift();
     if (!next) throw new Error("unexpected extra request");
     if (next instanceof Error) throw next;
@@ -49,6 +50,29 @@ describe("retry hints", () => {
   });
 });
 
+describe("model parameters", () => {
+  it("uses openai/gpt-oss-120b by default with room for reasoning, and hides the reasoning text", () => {
+    const c = readQueraConfig({ GROQ_API_KEY: "k" });
+    expect(c.model).toBe("openai/gpt-oss-120b");
+    expect(c.fallbackModel).toBe("openai/gpt-oss-20b");
+    expect(modelParams(c.model)).toEqual({ reasoning_effort: "low", include_reasoning: false, max_completion_tokens: 2048 });
+  });
+  it("only sends reasoning options to gpt-oss models", () => {
+    expect(modelParams("llama-3.3-70b-versatile")).toEqual({ max_tokens: 900 });
+    expect(modelParams("openai/gpt-oss-20b")).toHaveProperty("reasoning_effort");
+  });
+  it("puts those parameters on the wire, and a model override is honoured", async () => {
+    const h = harness([sse(["a"]), sse(["b"])]);
+    await collect(streamChat([{ role: "user", content: "hi" }], { config: cfg(), ...h.opts }));
+    expect(h.calls[0]?.body).toMatchObject({ model: "openai/gpt-oss-120b", stream: true, reasoning_effort: "low", include_reasoning: false, max_completion_tokens: 2048 });
+    expect(h.calls[0]?.body).not.toHaveProperty("max_tokens");
+    const o = readQueraConfig({ GROQ_API_KEY: "k", GROQ_MODEL: "llama-3.3-70b-versatile" });
+    await collect(streamChat([{ role: "user", content: "hi" }], { config: o, ...h.opts }));
+    expect(h.calls[1]?.body).toMatchObject({ model: "llama-3.3-70b-versatile", max_tokens: 900 });
+    expect(h.calls[1]?.body).not.toHaveProperty("reasoning_effort");
+  });
+});
+
 describe("streamChat", () => {
   const msgs = [{ role: "user" as const, content: "hi" }];
 
@@ -57,7 +81,7 @@ describe("streamChat", () => {
     const events = await collect(streamChat(msgs, { config: cfg(), ...h.opts }));
     expect(text(events)).toBe("Hello there");
     expect(events.at(-1)).toEqual({ type: "done" });
-    expect(h.calls[0]?.model).toBe("llama-3.3-70b-versatile");
+    expect(h.calls[0]?.model).toBe("openai/gpt-oss-120b");
   });
 
   it("silently waits out a rate limit and then answers — no error event ever", async () => {
@@ -88,7 +112,7 @@ describe("streamChat", () => {
     const h = harness([limited("3600"), sse(["from fallback"])]);
     const events = await collect(streamChat(msgs, { config: cfg({ maxWaitMs: 60_000 }), ...h.opts }));
     expect(text(events)).toBe("from fallback");
-    expect(h.calls.map((c) => c.model)).toEqual(["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]);
+    expect(h.calls.map((c) => c.model)).toEqual(["openai/gpt-oss-120b", "openai/gpt-oss-20b"]);
   });
 
   it("gives up with a generic 'unavailable' code only when nothing can recover", async () => {
