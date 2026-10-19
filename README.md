@@ -118,6 +118,9 @@ npm run demo                                    # writes docs/demo/querycompiler
 
 > **About the committed video:** it was recorded in a sandbox that cannot reach `api.groq.com`, so Quera's answers in it come from the local stand-in (`MOCK_GROQ_STYLE=explain`), which builds its text from the real compiler output in the prompt — the compiler, optimizer and UI in the video are real, the language model is not. Re-record with your own key to show genuine Groq answers.
 
+### Explainer animation
+A short Remotion animation that explains the pipeline lives in [`animation/`](animation/) with its rendered video at [`docs/demo/querycompiler-explainer.mp4`](docs/demo/querycompiler-explainer.mp4). It is a separate project (its own `package.json`); see `animation/README.md`.
+
 ### Troubleshooting
 | Symptom | Fix |
 |---|---|
